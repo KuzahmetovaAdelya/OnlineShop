@@ -1,10 +1,7 @@
 import './index.css';
 import { useState } from 'react';
-
-
-{/* <div className='test'>
-  <div className='test-small'></div>
-</div> */}
+import itemsList from "./list1.js";
+import footerList from './footerList.js';
 
 export default function App() {
   const [page, setPage] = useState("main")
@@ -31,8 +28,8 @@ function Header({setPage, page, user}) {
                 <img src='./arrow-down.svg' className='dropdown-arrow' alt='open'></img>
               </div>
               <div className='search'>
-                <img src='./search.svg' className='search-button'></img>
-                <input type='search' className='search-input' placeholder='Search for minimalist chair'></input>
+                <img src='./search.svg' className='search-button' alt='search'></img>
+                <input type='search' className='search-input' placeholder='Search for minimalist chair' name='search'></input>
               </div>
             </nav>
 
@@ -49,6 +46,67 @@ function Header({setPage, page, user}) {
   )
 }
 
+function Footer({setPage, page, user}) {
+  let footerListItems = []
+  for (let i = 0; i < footerList.length; i++) {
+    footerListItems.push(<FooterList list={footerList[i]} />)
+  }
+
+  return (
+    <>
+      <div className='container'>
+        <footer>
+          <div className='footer-list'>
+            <h5><b>Funiro.</b></h5>
+            <div className='footer-list-items'>
+              <p className='gray-text'>Worldwide furniture store since<br/>2020. We sell over 1000+<br/>branded products on our<br/>website</p>
+              
+              <div className='footer-line'>
+                <img src='./map.svg' className='footer-icon' alt='map-pointer'></img>
+                <p className='gray-text'>Sawojajar Malang, Indonesia</p>
+              </div>
+              <div className='footer-line'>
+                <img src='./phone.svg' className='footer-icon' alt='phone'></img>
+                <p className='gray-text'>+6289 456 3455</p>
+              </div>
+
+              <p className='gray-text'>www.funiro.com</p>
+            </div>
+          </div>
+
+          {footerListItems}
+
+          <div className='footer-list'>
+            <h5><b>Stay Updated</b></h5>
+            <div className='search'>
+              <input type='email' className='footer-input' placeholder='Enter your email' name='search'></input>
+              <img src='./send.svg' className='footer-button' alt='search'></img>
+            </div> 
+          </div>
+        </footer>
+      </div>
+    </>
+  )
+}
+
+function FooterList({list}) {
+  let listItem = []
+  for (let i = 0; i < list.elements.length; i++) { 
+    listItem.push(<p className='gray-text'>{list.elements[i]}</p>)
+  }
+
+  return (
+    <>
+      <div className='footer-list'>
+        <h5><b>{list.title}</b></h5>
+        <div className='footer-list-items'>
+          {listItem}
+        </div>
+      </div>
+    </>
+  )
+}
+
 
 function MainPage({setPage, user, setUser, page}) {
   return (
@@ -57,6 +115,8 @@ function MainPage({setPage, user, setUser, page}) {
       <MainHeaderSliderBlock />
       <MainFeatures />
       <MainProductsBlock />
+      <MainTips />
+      <Footer />
     </>
   )
 }
@@ -202,7 +262,7 @@ function MainFeatureItem({title, subtitle, img}) {
   return (
     <>
       <div className='feature-item'>
-        <img src={img} className='feature-img'></img>
+        <img src={img} className='feature-img' alt='feature'></img>
         <div className='feature-col'>
           <p className='large'><b>{title}</b></p> 
           <p className='gray-text'>{subtitle}</p>
@@ -213,19 +273,18 @@ function MainFeatureItem({title, subtitle, img}) {
 }
 
 function MainProductsBlock({}) {
+  let productCards = []
+  for (let i = 0; i < itemsList.length; i++) {
+    productCards.push(<MainProductCard key={itemsList[i].id} itemsList={itemsList[i]} />)
+  }
+
   return (
     <>
-      <div className='container'>
+      <div className='container mb'>
         <div className='products'>
           <h2>Our Products</h2>
           <div className='products-block'>
-            <MainProductCard />
-            <MainProductCard />
-            <MainProductCard />
-            <MainProductCard />
-            <MainProductCard />
-            <MainProductCard />
-            <MainProductCard />
+            {productCards}
           </div>
         </div>
       </div>
@@ -233,25 +292,230 @@ function MainProductsBlock({}) {
   )
 }
 
-function MainProductCard() {
+function MainProductCard({itemsList}) {
+  function handleHover(id) {
+    let element = document.getElementById(id)
+    element.className = "card-hover"
+  }
+
+  function handleLeave(id) {
+    let element = document.getElementById(id)
+    element.className = "card-hover-invisible"
+  }
+
   return (
     <>
-      <div className='product-card'>
-        <img src="prod1.png" className='product-card-img' alt='Syltherine'></img>
+      <div className='product-card' onMouseEnter={() => {handleHover(itemsList.id)}} onMouseLeave={() => {handleLeave(itemsList.id)}}>
+        <img src={itemsList.img} className='product-card-img' alt='Syltherine'></img>
         <div className='product-card-text-block'>
-          <h5>Syltherine</h5>
-          <p className='gray-text'>Stylish cafe chair</p>
+          <h5>{itemsList.name}</h5>
+          <p className='gray-text'>{itemsList.subtitle}</p>
           <div className='product-card-text-line'>
-            <h6>Rp 2.500.000</h6>
-            <p className='light-text product-card-last-price'>Rp 3.500.000</p>
+            <h6>Rp {itemsList.price}</h6>
+            <p className='light-text product-card-last-price'>{itemsList.dopInfo.oldPrice}</p>
           </div>
         </div>
 
-        <div className='product-card-new invisible'>
-          <p className='white-text'>New</p>
+        {itemsList.dopInfo.type === "new" &&
+          <div className='product-card-new'>
+            <p className='white-text'>New</p>
+          </div>
+        }
+        {itemsList.dopInfo.type === "discount" &&
+          <div className='product-card-sale'>
+            <p className='white-text'>- {itemsList.dopInfo.percent}%</p>
+          </div>
+        }
+        
+        <div className='card-hover-invisible' id={itemsList.id}>
+          <div className='card-hover-block'>
+            <button className='card-hover-button'>Add to cart</button>
+            <div className='card-hover-line'>
+              <div className='card-hover-item'>
+                <img src='share.svg' alt='share' className='card-hover-icon'></img>
+                <p className='white-text'><b>Share</b></p>
+              </div>
+
+              <div className='card-hover-item'>
+                <img src='like.svg' alt='like' className='card-hover-icon like'></img>
+                <p className='white-text'><b>Like</b></p>
+              </div>
+            </div>
+          </div>
         </div>
-        <div className='product-card-sale'>
-          <p className='white-text'>- 30%</p>
+      </div>
+    </>
+  )
+}
+
+function MainTips() {
+  const [tipsPage, setTipsPage] = useState(0)
+
+  function handleNext() {
+    console.log(tipsPage)
+    if (tipsPage === 3) {
+      setTipsPage(0)
+    } else {
+      setTipsPage(n => n + 1)
+    }
+
+    if (tipsPage === 0) {
+      document.getElementById("tips-slider2").checked = true
+    } else if (tipsPage === 1) {
+      document.getElementById("tips-slider3").checked = true
+    } else if (tipsPage === 2) {
+      document.getElementById("tips-slider4").checked = true
+    } else if (tipsPage === 3) {
+      document.getElementById("tips-slider1").checked = true
+    }
+  }
+
+  function handleBack() {
+    if (tipsPage === 0) {
+      setTipsPage(3)
+    } else {
+      setTipsPage(n => n - 1)
+    }
+
+    if (tipsPage === 1) {
+      document.getElementById("tips-slider1").checked = true
+    } else if (tipsPage === 2) {
+      document.getElementById("tips-slider2").checked = true
+    } else if (tipsPage === 3) {
+      document.getElementById("tips-slider3").checked = true
+    } else if (tipsPage === 0) {
+      document.getElementById("tips-slider4").checked = true
+    }
+  }
+
+  return (
+    <>
+      <div className='container mb'>
+        <div className='tips'>
+          <h2>Tips & Triks</h2>
+          {tipsPage === 0 ?
+          <div className='tips-line'>
+            <div className='tips-card'>
+              <img src='tip1.png' className='tips-card-img' alt="tip"></img>
+              <div className='tips-card-text-block'>
+                <h5>How to create a living room to love</h5>
+                <p className='small-text light-text'>20 jan 2020</p>
+              </div>
+            </div>
+
+            <div className='tips-card'>
+              <img src='tip2.png' className='tips-card-img' alt="tip"></img>
+              <div className='tips-card-text-block'>
+                <h5>Solution for clean look working space</h5>
+                <p className='small-text light-text'>21 jan 2020</p>
+              </div>
+            </div>
+
+            <div className='tips-card'>
+              <img src='tip3.png' className='tips-card-img' alt="tip"></img>
+              <div className='tips-card-text-block'>
+                <h5>Make your cooking activity more fun with good setup</h5>
+                <p className='small-text light-text'>22 jan 2020</p>
+              </div>
+            </div>
+          </div> :
+          tipsPage === 1 ?
+          <div className='tips-line'>
+            <div className='tips-card'>
+              <img src='tip1.png' className='tips-card-img' alt="tip"></img>
+              <div className='tips-card-text-block'>
+                <h5>How to create a living room to love</h5>
+                <p className='small-text light-text'>23 jan 2020</p>
+              </div>
+            </div>
+
+            <div className='tips-card'>
+              <img src='tip2.png' className='tips-card-img' alt="tip"></img>
+              <div className='tips-card-text-block'>
+                <h5>Solution for clean look working space</h5>
+                <p className='small-text light-text'>24 jan 2020</p>
+              </div>
+            </div>
+
+            <div className='tips-card'>
+              <img src='tip3.png' className='tips-card-img' alt="tip"></img>
+              <div className='tips-card-text-block'>
+                <h5>Make your cooking activity more fun with good setup</h5>
+                <p className='small-text light-text'>25 jan 2020</p>
+              </div>
+            </div>
+          </div> :
+          tipsPage === 2 ?
+          <div className='tips-line'>
+            <div className='tips-card'>
+              <img src='tip1.png' className='tips-card-img' alt="tip"></img>
+              <div className='tips-card-text-block'>
+                <h5>How to create a living room to love</h5>
+                <p className='small-text light-text'>26 jan 2020</p>
+              </div>
+            </div>
+
+            <div className='tips-card'>
+              <img src='tip2.png' className='tips-card-img' alt="tip"></img>
+              <div className='tips-card-text-block'>
+                <h5>Solution for clean look working space</h5>
+                <p className='small-text light-text'>27 jan 2020</p>
+              </div>
+            </div>
+
+            <div className='tips-card'>
+              <img src='tip3.png' className='tips-card-img' alt="tip"></img>
+              <div className='tips-card-text-block'>
+                <h5>Make your cooking activity more fun with good setup</h5>
+                <p className='small-text light-text'>28 jan 2020</p>
+              </div>
+            </div>
+          </div> :
+          tipsPage === 3 ?
+          <div className='tips-line'>
+            <div className='tips-card'>
+              <img src='tip1.png' className='tips-card-img' alt="tip"></img>
+              <div className='tips-card-text-block'>
+                <h5>How to create a living room to love</h5>
+                <p className='small-text light-text'>29 jan 2020</p>
+              </div>
+            </div>
+
+            <div className='tips-card'>
+              <img src='tip2.png' className='tips-card-img' alt="tip"></img>
+              <div className='tips-card-text-block'>
+                <h5>Solution for clean look working space</h5>
+                <p className='small-text light-text'>30 jan 2020</p>
+              </div>
+            </div>
+
+            <div className='tips-card'>
+              <img src='tip3.png' className='tips-card-img' alt="tip"></img>
+              <div className='tips-card-text-block'>
+                <h5>Make your cooking activity more fun with good setup</h5>
+                <p className='small-text light-text'>31 jan 2020</p>
+              </div>
+            </div>
+          </div> :
+          <h1>ERROR</h1>
+          }
+
+          <div className='tips-control-block'>
+            <input type='radio' name='tips-slider' id='tips-slider1' className='points-control-input'></input>
+            <input type='radio' name='tips-slider' id='tips-slider2' className='points-control-input'></input>
+            <input type='radio' name='tips-slider' id='tips-slider3' className='points-control-input'></input>
+            <input type='radio' name='tips-slider' id='tips-slider4' className='points-control-input'></input>
+
+            <label onClick={() => {setTipsPage(0)}} htmlFor='tips-slider1' className='points-control-label' id='tips-control1'></label>
+            <label onClick={() => {setTipsPage(1)}} htmlFor='tips-slider2' className='points-control-label' id='tips-control2'></label>
+            <label onClick={() => {setTipsPage(2)}} htmlFor='tips-slider3' className='points-control-label' id='tips-control3'></label>
+            <label onClick={() => {setTipsPage(3)}} htmlFor='tips-slider4' className='points-control-label' id='tips-control4'></label>
+          </div>
+
+          <div className='tips-arrows-control-block'>
+            <div className='tips-arrow-block' onClick={handleBack}><img src='./arrow-down.svg' className='tips-arrows-control arrow-left' alt='back'></img></div>
+            <div className='tips-arrow-block' onClick={handleNext}><img src='./arrow-down.svg' className='tips-arrows-control arrow-right' alt='next'></img></div>
+          </div>
         </div>
       </div>
     </>
