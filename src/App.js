@@ -10,6 +10,8 @@ export default function App() {
   return (
     <>
       {page === "main" && <MainPage page={page} setPage={setPage} user={user} setUser={setUser} />}
+      {page === "registration" && <RegistrationPage page={page} setPage={setPage} user={user} setUser={setUser} />}
+      {page === "authorization" && <AuthorizationPage page={page} setPage={setPage} user={user} setUser={setUser} />}
     </>
   )
 }
@@ -18,11 +20,11 @@ export default function App() {
 function Header({setPage, page, user}) {
   return (
     <>
-      <div className='orange-block'>
+      <div className='orange-block pb'>
         <div className='container'>
           <header>
             <nav>
-              <h5 className='title'>Funiro.</h5>
+              <h5 className='title' onClick={() => {setPage("main")}}>Funiro.</h5>
               <div className='dropdown-line'>
                 <p>Products</p>
                 <img src='./arrow-down.svg' className='dropdown-arrow' alt='open'></img>
@@ -36,10 +38,22 @@ function Header({setPage, page, user}) {
             <nav>
               <img src='./like.svg' className='nav-icon' alt='waitList'></img>
               <img src='./cart.svg' className='nav-icon' alt='basket'></img>
-              {user === 'unauthorized' && <button>Sign On</button> }
+              {user === 'unauthorized' && <button onClick={() => {setPage("registration")}}>Sign Up</button> }
               {user !== 'unauthorized' && <img src='./account.svg' className='nav-icon' alt='basket'></img>}
             </nav>
           </header>
+        </div>
+      </div>
+    </>
+  )
+}
+
+function LittleHeader({setPage}) {
+  return (
+    <>
+      <div className='orange-block pb pt'>
+        <div className='container'>
+          <h5 className='title' onClick={() => {setPage("main")}}>Funiro.</h5>
         </div>
       </div>
     </>
@@ -516,6 +530,173 @@ function MainTips() {
             <div className='tips-arrow-block' onClick={handleBack}><img src='./arrow-down.svg' className='tips-arrows-control arrow-left' alt='back'></img></div>
             <div className='tips-arrow-block' onClick={handleNext}><img src='./arrow-down.svg' className='tips-arrows-control arrow-right' alt='next'></img></div>
           </div>
+        </div>
+      </div>
+    </>
+  )
+}
+
+
+function RegistrationPage({page, setPage, user, setUser}) {
+
+
+  return (
+    <>
+      <LittleHeader setPage={setPage} />
+      <RegistrationForm user={user} setUser={setUser} setPage={setPage} />
+    </>
+  )
+}
+
+function RegistrationForm({user, setUser, setPage}) {
+  const [danns, setDanns] = useState([])
+  const [response, setResponse] = useState({})
+
+  function registr(e) {
+    e.preventDefault()
+    let name = document.getElementById("name").value
+    let surname = document.getElementById("surname").value
+    let email = document.getElementById("email").value
+    let city = document.getElementById("city").value
+    let password = document.getElementById("password").value
+    let passwordRep = document.getElementById("passwordRep").value
+
+    if (password === passwordRep) {
+      // console.log(btoa(password))
+      fetch("http://localhost:3001/getusers")
+      .then((response) => response.json())
+      .then((data) => setDanns(data));
+
+      for (let i = 0; i < danns.length; i++) {
+        if (email === danns[i]) {
+          alert("Sorry, this email is already busy")
+        } else {
+          let userData = {
+            email: email,
+            name: name,
+            surname: surname,
+            city: city,
+            password: password
+          }
+
+          
+
+          fetch("http://localhost:3001/registration", {method: "POST", headers: {
+              "Content-Type": "application/json"
+            }, 
+            body: JSON.stringify(userData)
+          }).then((response) => {
+            if (response.status !== 200) {
+              alert("Регистрация не получилась :(")
+            }
+            else {
+              response.json()
+            }
+          }).then((data) => setResponse(data))
+
+          // console.log(JSON.parse(response))
+        }
+      }
+    } else {
+      alert("Sorry, passwords aren't same")
+    }
+  }
+
+  return (
+    <>
+      <div className='orange-block max'>
+        <div className='container'>
+          <form className='revert-orange-block reg-form' onSubmit={(e) => {registr(e)}}>
+            <div className='reg-title-line'>
+              <p onClick={() => {setPage("main")}}><u>Go Back</u></p>
+              <h5>Registration</h5>
+            </div>
+
+            <div className='reg-input-block'>
+              <label htmlFor='email' className='reg-label'>Email</label>
+              <input name="email" id='email' placeholder='test@test.com' className='reg-input' type='email'></input>
+            </div>
+
+            <div className='reg-input-block'>
+              <label htmlFor='name' className='reg-label'>Name</label>
+              <input name="name" id='name' placeholder='Ivan' className='reg-input' type='text'></input>
+            </div>
+
+            <div className='reg-input-block'>
+              <label htmlFor='surname' className='reg-label'>Surname</label>
+              <input name="surname" id='surname' placeholder='Ivanov' className='reg-input' type='text'></input>
+            </div>
+
+            <div className='reg-input-block'>
+              <label htmlFor='city' className='reg-label'>City</label>
+              <input name="city" id='city' placeholder='Moscow' className='reg-input' type='text'></input>
+            </div>
+
+            <div className='reg-input-block'>
+              <label htmlFor='password' className='reg-label'>Password</label>
+              <input name="password" id='password' placeholder='' className='reg-input' type='password'></input>
+            </div>
+
+            <div className='reg-input-block'>
+              <label htmlFor='passwordRep' className='reg-label'>Repeat password</label>
+              <input name="passwordRep" id='passwordRep' placeholder='' className='reg-input' type='password'></input>
+            </div>
+
+            <div className='reg-bottom-block'>
+              <button className='reg-button'>Sign Up</button>
+              <p>Have got an account?</p>
+              <p onClick={() => {setPage("authorization")}}><u><b>Sign In</b></u></p>
+            </div>
+
+          </form>
+        </div>
+      </div>
+    </>
+  )
+}
+
+
+function AuthorizationPage({page, setPage, user, setUser}) {
+  return (
+    <>
+      <LittleHeader setPage={setPage} />
+      <AuthorizationForm user={user} setUser={setUser} setPage={setPage} />
+    </>
+  )
+}
+
+function AuthorizationForm({user, setUser, setPage}) {
+  return (
+    <>
+      <div className='orange-block max'>
+        <div className='container'>
+          <form className='revert-orange-block reg-form'>
+            <div className='reg-title-line'>
+              <p onClick={() => {setPage("main")}}><u>Go Back</u></p>
+              <h5>Authorization</h5>
+            </div>
+    
+            <div className='reg-input-block'>
+              <label htmlFor='email' className='reg-label'>Email</label>
+              <input name="email" id='email' placeholder='test@test.com' className='reg-input' type='email'></input>
+            </div>
+    
+            <div className='reg-input-block'>
+              <label htmlFor='password' className='reg-label'>Password</label>
+              <input name="password" id='password' placeholder='' className='reg-input' type='password'></input>
+            </div>
+    
+            <div className='reg-input-block'>
+              <label htmlFor='passwordRep' className='reg-label'>Repeat password</label>
+              <input name="passwordRep" id='passwordRep' placeholder='' className='reg-input' type='password'></input>
+            </div>
+    
+            <div className='reg-bottom-block'>
+              <button className='reg-button'>Sign In</button>
+              <p>Haven't got an account?</p>
+              <p onClick={() => {setPage("registration")}}><u><b>Sign Up</b></u></p>
+            </div>
+          </form>
         </div>
       </div>
     </>

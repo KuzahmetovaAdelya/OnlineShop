@@ -34,7 +34,7 @@ body, input, button {
 }
 
 .orange-block {
-  background-image: linear-gradient(to right, var(--peach) 70%, var(--light-peach) 70%);
+  background-image: linear-gradient(to right, var(--peach) 60%, var(--light-peach) 60%);
 }
 
 .white-block {
@@ -43,6 +43,14 @@ body, input, button {
 
 .mb {
   margin-bottom: 60px;
+}
+
+.pb {
+  padding-bottom: 60px;
+}
+
+.pt {
+  padding-top: 2vh;
 }
 
 button {
@@ -55,6 +63,13 @@ button {
   cursor: pointer;
 }
 
+button:hover {
+  background: var(--orange);
+  border: 1px solid var(--white);
+  color: var(--white);
+  transition: all ease 0.5s;
+}
+
 /* Typography */
 
 h1 {
@@ -62,6 +77,7 @@ h1 {
   font-weight: 700;
   line-height: 120%;
   color: var(--dark-gray);
+  cursor: default;
 }
 
 h2 {
@@ -69,6 +85,7 @@ h2 {
   font-weight: 700;
   line-height: 120%;
   color: var(--dark-gray);
+  cursor: default;
 }
 
 h3 {
@@ -76,6 +93,7 @@ h3 {
   font-weight: 600;
   line-height: 120%;
   color: var(--dark-gray);
+  cursor: default;
 }
 
 h4 {
@@ -83,6 +101,7 @@ h4 {
   font-weight: 600;
   line-height: 120%;
   color: var(--dark-gray);
+  cursor: default;
 }
 
 h5 {
@@ -90,12 +109,20 @@ h5 {
   font-weight: 600;
   line-height: 120%;
   color: var(--dark-gray);
+  cursor: default;
 }
 
 .title {
   font-weight: 900;
   line-height: auto;
   color: var(--black);
+  cursor: default;
+}
+
+.title:hover {
+  cursor: pointer;
+  color: var(--orange);
+  transition: all ease 0.5s;
 }
 
 h6 {
@@ -103,13 +130,15 @@ h6 {
   font-weight: 600;
   line-height: 120%;
   color: var(--dark-gray);
+  cursor: default;
 }
 
-p, a {
+p, a, label {
   font-size: 16px;
   font-weight: 500;
   line-height: 150%;
   color: var(--dark-gray);
+  cursor: default;
 }
 
 .small-text {
@@ -134,6 +163,7 @@ u {
   font-weight: inherit;
   font-size: inherit;
   color: var(--orange);
+  text-decoration: none;
 }
 
 .white-text {
@@ -653,4 +683,107 @@ footer {
 
 .tips-arrows-control {
   filter: invert(63%) sepia(84%) saturate(300%) hue-rotate(328deg) brightness(104%) contrast(82%);
+}
+
+/* Registration and authorization page */
+
+.revert-orange-block {
+  background-image: linear-gradient(to right, var(--light-peach) 79.5%, var(--peach) 70%);
+}
+
+.reg-form {
+  width: 48%;
+  display: flex;
+  flex-direction: column;
+  gap: 1vh;
+  margin: 0 auto;
+  padding: 2vh 2%;
+  border-radius: 5%;
+}
+
+.reg-title-line {
+  display: flex;
+  align-items: center;
+  gap: 27%;
+}
+
+.reg-input-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5vh;
+}
+
+.reg-input {
+  width: calc(100% - 4%);
+  font-size: 16px;
+  color: var(--dark-gray);
+  background-color: var(--white);
+  border: 1px solid var(--orange);
+  padding: 0.5vh 2%;
+  height: 3vh;
+  font-family: inherit;
+}
+
+.reg-input::placeholder {
+  color: var(--orange);
+  font-family: inherit;
+  font-size: 16px;
+}
+
+.reg-input:focus-visible {
+  outline: none;
+  background-color: var(--light-peach);
+}
+
+.reg-input:user-invalid {
+  background-color: var(--peach);
+  border: 1px solid var(--red);
+}
+
+.reg-input:hover {
+  background-color: var(--peach);
+  border: 1px solid var(--orange);
+}
+
+.max {
+  height: calc(100vh - 2vh - 60px - 30px);
+}
+
+.reg-bottom-block {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 1vh;
+}
+
+.reg-bottom-block p u b {
+  cursor: pointer;
+}
+
+.reg-bottom-block p u b:hover {
+  opacity: 0.5;
+  transition: all ease 0.5s;
+  font-size: 18px;
+}
+
+.reg-button {
+  width: 50%;
+  background-color: var(--orange);
+  border: 1px solid var(--white);
+  color: var(--white);
+  margin: 0 25%;
+}
+
+.reg-button:hover {
+  background-color: var(--white);
+  border: 1px solid var(--orange);
+  color: var(--orange);
+  transition: all ease 0.5s;
+}
+
+.reg-title-line p:hover {
+  opacity: 0.5;
+  transition: all ease 0.5s;
+  cursor: pointer;
 }
