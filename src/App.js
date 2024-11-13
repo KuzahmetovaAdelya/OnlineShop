@@ -1,23 +1,36 @@
 import './index.css';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import itemsList from "./list1.js";
 import footerList from './footerList.js';
 
 export default function App() {
   const [page, setPage] = useState("main")
   const [user, setUser] = useState("unauthorized")
+  const [liked, setLiked] = useState([])
+  const [products, setProducts] = useState([])
 
   return (
     <>
-      {page === "main" && <MainPage page={page} setPage={setPage} user={user} setUser={setUser} />}
+      {page === "main" && <MainPage page={page} setPage={setPage} user={user} setUser={setUser} liked={liked} setLiked={setLiked} products={products} setProducts={setProducts} />}
       {page === "registration" && <RegistrationPage page={page} setPage={setPage} user={user} setUser={setUser} />}
       {page === "authorization" && <AuthorizationPage page={page} setPage={setPage} user={user} setUser={setUser} />}
+      {page === "waitlist" && <WaitListPage page={page} setPage={setPage} user={user} setUser={setUser} liked={liked} setLiked={setLiked} products={products} />}
+      {page === "basket" && <BasketPage page={page} setPage={setPage} user={user} setUser={setUser} liked={liked} setLiked={setLiked} />}
     </>
   )
 }
 
 
 function Header({setPage, page, user}) {
+  let likeClass = "nav-icon"
+  let cartClass = "nav-icon"
+  if(page === "basket") {
+    cartClass = "nav-icon active-icon"
+  }
+  if(page === "waitlist") {
+    likeClass = "nav-icon active-icon"
+  }
+
   return (
     <>
       <div className='orange-block pb'>
@@ -36,10 +49,9 @@ function Header({setPage, page, user}) {
             </nav>
 
             <nav>
-              <img src='./like.svg' className='nav-icon' alt='waitList'></img>
-              <img src='./cart.svg' className='nav-icon' alt='basket'></img>
+              {user !== 'unauthorized' && <img onClick={() => {setPage("waitlist")}} src='./like.svg' className={likeClass} alt='waitList'></img>}
+              {user !== 'unauthorized' && <img onClick={() => {setPage("basket")}} src='./cart.svg' className={cartClass} alt='basket'></img>}              
               {user === 'unauthorized' && <button onClick={() => {setPage("registration")}}>Sign Up</button> }
-              {user !== 'unauthorized' && <img src='./account.svg' className='nav-icon' alt='basket'></img>}
             </nav>
           </header>
         </div>
@@ -122,13 +134,13 @@ function FooterList({list}) {
 }
 
 
-function MainPage({setPage, user, setUser, page}) {
+function MainPage({setPage, user, setUser, page, liked, setLiked, products, setProducts}) {
   return (
     <>
       <Header setPage={setPage} page={page} user={user} />
       <MainHeaderSliderBlock />
       <MainFeatures />
-      <MainProductsBlock />
+      <MainProductsBlock liked={liked} setLiked={setLiked} products={products} setProducts={setProducts} />
       <MainTips />
       <Footer />
     </>
@@ -286,10 +298,19 @@ function MainFeatureItem({title, subtitle, img}) {
   )
 }
 
-function MainProductsBlock({}) {
-  let productCards = []
-  for (let i = 0; i < itemsList.length; i++) {
-    productCards.push(<MainProductCard key={itemsList[i].id} itemsList={itemsList[i]} />)
+function MainProductsBlock({liked, setLiked, products, setProducts}) {
+
+  useEffect(() => {
+    fetch("http://localhost:3001/getproducts")
+    .then((response) => response.json())
+    .then((data) => setProducts(data));
+  }, [])
+
+  function handleLike(id) {
+    let likedId = id
+    let newList = liked.slice()
+    newList.push(likedId)
+    setLiked(newList)
   }
 
   return (
@@ -298,7 +319,7 @@ function MainProductsBlock({}) {
         <div className='products'>
           <h2>Our Products</h2>
           <div className='products-block'>
-            {productCards}
+            {products.map((product) => <MainProductCard key={product.id} itemsList={product} liked={liked} setLiked={setLiked} handleLike={handleLike} />)}
           </div>
         </div>
       </div>
@@ -306,7 +327,8 @@ function MainProductsBlock({}) {
   )
 }
 
-function MainProductCard({itemsList}) {
+function MainProductCard({itemsList, setLiked, liked, handleLike}) {
+
   function handleHover(id) {
     let element = document.getElementById(id)
     element.className = "card-hover"
@@ -315,6 +337,11 @@ function MainProductCard({itemsList}) {
   function handleLeave(id) {
     let element = document.getElementById(id)
     element.className = "card-hover-invisible"
+  }
+
+  let likeClass = 'card-hover-icon like'
+  if (liked.indexOf(itemsList.id) !== -1) {
+    likeClass = "card-hover-icon like liked"
   }
 
   return (
@@ -326,18 +353,18 @@ function MainProductCard({itemsList}) {
           <p className='gray-text'>{itemsList.subtitle}</p>
           <div className='product-card-text-line'>
             <h6>Rp {itemsList.price}</h6>
-            <p className='light-text product-card-last-price'>{itemsList.dopInfo.oldPrice}</p>
+            <p className='light-text product-card-last-price'>{itemsList.oldPrice}</p>
           </div>
         </div>
 
-        {itemsList.dopInfo.type === "new" &&
+        {itemsList.type === "new" &&
           <div className='product-card-new'>
             <p className='white-text'>New</p>
           </div>
         }
-        {itemsList.dopInfo.type === "discount" &&
+        {itemsList.type === "discount" &&
           <div className='product-card-sale'>
-            <p className='white-text'>- {itemsList.dopInfo.percent}%</p>
+            <p className='white-text'>- {itemsList.percent}%</p>
           </div>
         }
         
@@ -350,8 +377,10 @@ function MainProductCard({itemsList}) {
                 <p className='white-text'><b>Share</b></p>
               </div>
 
-              <div className='card-hover-item'>
-                <img src='like.svg' alt='like' className='card-hover-icon like'></img>
+              <div className="card-hover-item like-item" onClick={() => {handleLike(itemsList.id)}}>
+                <svg id={itemsList.id} className={likeClass} width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M11.9996 21.0542C-8 10 5.99999 -1.99997 11.9996 5.58809C18 -1.99997 32 10 11.9996 21.0542Z" stroke="#ffffff" stroke-width="1.8"/>
+                </svg>
                 <p className='white-text'><b>Like</b></p>
               </div>
             </div>
@@ -366,7 +395,6 @@ function MainTips() {
   const [tipsPage, setTipsPage] = useState(0)
 
   function handleNext() {
-    console.log(tipsPage)
     if (tipsPage === 3) {
       setTipsPage(0)
     } else {
@@ -538,8 +566,6 @@ function MainTips() {
 
 
 function RegistrationPage({page, setPage, user, setUser}) {
-
-
   return (
     <>
       <LittleHeader setPage={setPage} />
@@ -549,7 +575,6 @@ function RegistrationPage({page, setPage, user, setUser}) {
 }
 
 function RegistrationForm({user, setUser, setPage}) {
-  const [danns, setDanns] = useState([])
   const [response, setResponse] = useState({})
 
   function registr(e) {
@@ -562,41 +587,32 @@ function RegistrationForm({user, setUser, setPage}) {
     let passwordRep = document.getElementById("passwordRep").value
 
     if (password === passwordRep) {
-      // console.log(btoa(password))
-      fetch("http://localhost:3001/getusers")
-      .then((response) => response.json())
-      .then((data) => setDanns(data));
-
-      for (let i = 0; i < danns.length; i++) {
-        if (email === danns[i]) {
-          alert("Sorry, this email is already busy")
-        } else {
-          let userData = {
-            email: email,
-            name: name,
-            surname: surname,
-            city: city,
-            password: password
-          }
-
-          
-
-          fetch("http://localhost:3001/registration", {method: "POST", headers: {
-              "Content-Type": "application/json"
-            }, 
-            body: JSON.stringify(userData)
-          }).then((response) => {
-            if (response.status !== 200) {
-              alert("Регистрация не получилась :(")
-            }
-            else {
-              response.json()
-            }
-          }).then((data) => setResponse(data))
-
-          // console.log(JSON.parse(response))
+        let userData = {
+          email: email,
+          name: name,
+          surname: surname,
+          city: city,
+          password: password
         }
-      }
+
+        fetch("http://localhost:3001/registration", {method: "POST",  
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(userData)
+        }).then((response) => {
+          if (response.status === 409) {
+            alert("Email isn't unuque")
+          } else if (response.status !== 200) {
+            alert("Registration failed")
+          } else {
+            return response.json()
+          }
+        }).then((data) => setResponse(data))
+
+        setUser(response)
+        setPage("main")
+        alert("Registration was successful")
     } else {
       alert("Sorry, passwords aren't same")
     }
@@ -606,7 +622,7 @@ function RegistrationForm({user, setUser, setPage}) {
     <>
       <div className='orange-block max'>
         <div className='container'>
-          <form className='revert-orange-block reg-form' onSubmit={(e) => {registr(e)}}>
+          <form className='revert-orange-block reg-form' onSubmit={(e) => registr(e)}>
             <div className='reg-title-line'>
               <p onClick={() => {setPage("main")}}><u>Go Back</u></p>
               <h5>Registration</h5>
@@ -666,11 +682,46 @@ function AuthorizationPage({page, setPage, user, setUser}) {
 }
 
 function AuthorizationForm({user, setUser, setPage}) {
+  const [response, setResponse] = useState({})
+
+  function login(e) {
+    e.preventDefault()
+    let email = document.getElementById("email").value
+    let password = document.getElementById("password").value
+
+    let userData = {
+      email: email,
+      password: password
+    }
+
+    fetch("http://localhost:3001/auth", {method: "POST",  
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(userData)
+    })
+    .then((response) => {
+      if (response.status === 409) {
+        alert("We haven't got user with this email")
+      } else if (response.status === 403) {
+        alert("Wrong password")
+      } else if (response.status !== 200) {
+        alert("Sorry, autentification is failed")
+      } else {
+        return response.json()
+      }
+    }).then((data) => setResponse(data));
+    
+    setUser(response)
+    setPage("main")
+    alert("Autentifiacation was successful")
+  }
+
   return (
     <>
       <div className='orange-block max'>
         <div className='container'>
-          <form className='revert-orange-block reg-form'>
+          <form className='revert-orange-block reg-form' onSubmit={(e) => {login(e)}}>
             <div className='reg-title-line'>
               <p onClick={() => {setPage("main")}}><u>Go Back</u></p>
               <h5>Authorization</h5>
@@ -686,10 +737,7 @@ function AuthorizationForm({user, setUser, setPage}) {
               <input name="password" id='password' placeholder='' className='reg-input' type='password'></input>
             </div>
     
-            <div className='reg-input-block'>
-              <label htmlFor='passwordRep' className='reg-label'>Repeat password</label>
-              <input name="passwordRep" id='passwordRep' placeholder='' className='reg-input' type='password'></input>
-            </div>
+
     
             <div className='reg-bottom-block'>
               <button className='reg-button'>Sign In</button>
@@ -702,3 +750,128 @@ function AuthorizationForm({user, setUser, setPage}) {
     </>
   )
 }
+
+
+function WaitListPage({page, setPage, user, setUser, liked, setLiked, products}) {
+  return (
+    <>
+      <Header setPage={setPage} page={page} user={user} />
+      <WaitListProducts liked={liked} setLiked={setLiked} products={products} />
+      <Footer />
+    </>
+  )
+}
+
+function WaitListProducts({liked, setLiked, products}) {
+
+
+  let productCards = []
+
+  let likedProducts = []
+  for (let i = 0; i < liked.length; i++) {
+    let liked_id = liked[i]
+    let index = products.map(function(e) { return e.id; }).indexOf(liked_id);
+    likedProducts.push(index)
+  }
+
+  for (let i = 0; i < likedProducts.length; i++) {
+    productCards.push(products[likedProducts[i]])
+  }
+
+  function handleDislike(id) {
+    // document.getElementById(`${id}-like`).className = "card-hover-icon like"
+    // Continue here
+  }
+
+  // {products.map((product) => <MainProductCard key={product.id} itemsList={product} liked={liked} setLiked={setLiked} handleLike={handleLike} />)}
+  // let index = itemsList.map(function(e) { return e.id; }).indexOf(id);
+
+  return (
+    <>
+      <div className='container mb pt'>
+        <div className='products'>
+          <h2>Wait List</h2>
+          <div className='products-block'>
+            {productCards.map((product) => <WaitProductCard key={product.id} handleDislike={handleDislike} itemsList={product} liked={liked} setLiked={setLiked} />)}
+          </div>
+        </div>
+      </div>
+    </>
+  )
+}
+
+function WaitProductCard({itemsList, liked, setLiked, handleDislike}) {
+  function handleHover(id) {
+    let element = document.getElementById(id)
+    element.className = "card-hover"
+  }
+
+  function handleLeave(id) {
+    let element = document.getElementById(id)
+    element.className = "card-hover-invisible"
+  }
+
+  let likeClass = 'card-hover-icon like'
+  if (liked.indexOf(itemsList.id) !== -1) {
+    likeClass = "card-hover-icon like liked"
+  }
+
+  let likeId = itemsList.id + "-like"
+
+  return (
+    <>
+      <div className='product-card' onMouseEnter={() => {handleHover(itemsList.id)}} onMouseLeave={() => {handleLeave(itemsList.id)}}>
+        <img src={itemsList.img} className='product-card-img' alt='Syltherine'></img>
+        <div className='product-card-text-block'>
+          <h5>{itemsList.name}</h5>
+          <p className='gray-text'>{itemsList.subtitle}</p>
+          <div className='product-card-text-line'>
+            <h6>Rp {itemsList.price}</h6>
+            <p className='light-text product-card-last-price'>{itemsList.oldPrice}</p>
+          </div>
+        </div>
+
+        {itemsList.type === "new" &&
+          <div className='product-card-new'>
+            <p className='white-text'>New</p>
+          </div>
+        }
+        {itemsList.type === "discount" &&
+          <div className='product-card-sale'>
+            <p className='white-text'>- {itemsList.percent}%</p>
+          </div>
+        }
+        
+        <div className='card-hover-invisible' id={itemsList.id}>
+          <div className='card-hover-block'>
+            <button className='card-hover-button'>Add to cart</button>
+            <div className='card-hover-line'>
+              <div className='card-hover-item'>
+                <img src='share.svg' alt='share' className='card-hover-icon'></img>
+                <p className='white-text'><b>Share</b></p>
+              </div>
+
+              <div className='card-hover-item' onClick={() => {handleDislike(itemsList.id)}}>
+                <svg id={likeId} className={likeClass} width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M11.9996 21.0542C-8 10 5.99999 -1.99997 11.9996 5.58809C18 -1.99997 32 10 11.9996 21.0542Z" stroke="#ffffff" stroke-width="1.8"/>
+                </svg>
+                <p className='white-text'><b>Like</b></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  )
+}
+
+
+function BasketPage({page, setPage, user, setUser, liked, setLiked}) {
+  return (
+    <>
+      <Header setPage={setPage} page={page} user={user} />
+      <Footer />
+    </>
+  )
+}
+

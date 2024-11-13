@@ -230,6 +230,16 @@ nav {
   background-color: var(--light-peach);
 }
 
+.nav-icon:hover {
+  filter: invert(76%) sepia(7%) saturate(3300%) hue-rotate(328deg) brightness(97%) contrast(87%);
+  cursor: pointer;
+  transition: all ease 0.1s;
+}
+
+.active-icon {
+  filter: invert(76%) sepia(7%) saturate(3300%) hue-rotate(328deg) brightness(97%) contrast(87%);
+}
+
 /* Footer */
 
 footer {
@@ -331,6 +341,13 @@ footer {
   width: 100%;
   color: var(--white);
   background-color: var(--orange);
+  border: 1px solid var(--white);
+}
+
+.invert:hover {
+  color: var(--orange);
+  background-color: var(--white);
+  border: 1px solid var(--orange);
 }
 
 .control-block {
@@ -593,8 +610,16 @@ footer {
   cursor: pointer;
 }
 
-.like {
-  filter: invert(96%) sepia(99%) saturate(2%) hue-rotate(16deg) brightness(105%) contrast(101%);
+.like-item:hover .like path {
+  fill: var(--orange);
+}
+
+.like-item:hover p {
+  cursor: pointer;
+}
+
+.liked path {
+  fill: var(--orange);
 }
 
 /* Tips block */
