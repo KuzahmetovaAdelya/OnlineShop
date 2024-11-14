@@ -5,23 +5,26 @@ import footerList from './footerList.js';
 
 export default function App() {
   const [page, setPage] = useState("main")
-  const [user, setUser] = useState("unauthorized")
+  const token = localStorage.getItem("token")
   const [liked, setLiked] = useState([])
   const [products, setProducts] = useState([])
 
   return (
     <>
-      {page === "main" && <MainPage page={page} setPage={setPage} user={user} setUser={setUser} liked={liked} setLiked={setLiked} products={products} setProducts={setProducts} />}
-      {page === "registration" && <RegistrationPage page={page} setPage={setPage} user={user} setUser={setUser} />}
-      {page === "authorization" && <AuthorizationPage page={page} setPage={setPage} user={user} setUser={setUser} />}
-      {page === "waitlist" && <WaitListPage page={page} setPage={setPage} user={user} setUser={setUser} liked={liked} setLiked={setLiked} products={products} />}
-      {page === "basket" && <BasketPage page={page} setPage={setPage} user={user} setUser={setUser} liked={liked} setLiked={setLiked} />}
+      {page === "main" && <MainPage page={page} setPage={setPage} liked={liked} setLiked={setLiked} products={products} setProducts={setProducts} token={token} />}
+      {page === "registration" && <RegistrationPage page={page} setPage={setPage} />}
+      {page === "authorization" && <AuthorizationPage page={page} setPage={setPage} />}
+      {page === "waitlist" && <WaitListPage page={page} setPage={setPage} liked={liked} setLiked={setLiked} products={products} token={token} />}
+      {page === "basket" && <BasketPage page={page} setPage={setPage}  liked={liked} setLiked={setLiked} token={token} />}
     </>
   )
 }
 
+// let index = itemsList.map(function(e) { return e.id; }).indexOf(id);
 
-function Header({setPage, page, user}) {
+
+
+function Header({setPage, page, token}) {
   let likeClass = "nav-icon"
   let cartClass = "nav-icon"
   if(page === "basket") {
@@ -49,9 +52,9 @@ function Header({setPage, page, user}) {
             </nav>
 
             <nav>
-              {user !== 'unauthorized' && <img onClick={() => {setPage("waitlist")}} src='./like.svg' className={likeClass} alt='waitList'></img>}
-              {user !== 'unauthorized' && <img onClick={() => {setPage("basket")}} src='./cart.svg' className={cartClass} alt='basket'></img>}              
-              {user === 'unauthorized' && <button onClick={() => {setPage("registration")}}>Sign Up</button> }
+              {token !== null && <img onClick={() => {setPage("waitlist")}} src='./like.svg' className={likeClass} alt='waitList'></img>}
+              {token !== null && <img onClick={() => {setPage("basket")}} src='./cart.svg' className={cartClass} alt='basket'></img>}              
+              {token === null && <button onClick={() => {setPage("registration")}}>Sign Up</button> }
             </nav>
           </header>
         </div>
@@ -72,7 +75,7 @@ function LittleHeader({setPage}) {
   )
 }
 
-function Footer({setPage, page, user}) {
+function Footer({setPage, page}) {
   let footerListItems = []
   for (let i = 0; i < footerList.length; i++) {
     footerListItems.push(<FooterList list={footerList[i]} />)
@@ -134,13 +137,13 @@ function FooterList({list}) {
 }
 
 
-function MainPage({setPage, user, setUser, page, liked, setLiked, products, setProducts}) {
+function MainPage({setPage, page, liked, setLiked, products, setProducts, token}) {
   return (
     <>
-      <Header setPage={setPage} page={page} user={user} />
+      <Header setPage={setPage} page={page} token={token} />
       <MainHeaderSliderBlock />
       <MainFeatures />
-      <MainProductsBlock liked={liked} setLiked={setLiked} products={products} setProducts={setProducts} />
+      <MainProductsBlock liked={liked} setLiked={setLiked} products={products} setProducts={setProducts} token={token} />
       <MainTips />
       <Footer />
     </>
@@ -298,7 +301,8 @@ function MainFeatureItem({title, subtitle, img}) {
   )
 }
 
-function MainProductsBlock({liked, setLiked, products, setProducts}) {
+function MainProductsBlock({liked, setLiked, products, setProducts, token}) {
+  const [response, setResponse] = useState({})
 
   useEffect(() => {
     fetch("http://localhost:3001/getproducts")
@@ -306,11 +310,75 @@ function MainProductsBlock({liked, setLiked, products, setProducts}) {
     .then((data) => setProducts(data));
   }, [])
 
+  // let userData = {
+  //   email: email,
+  //   name: name,
+  //   surname: surname,
+  //   city: city,
+  //   password: password
+  // }
+
+  // fetch("http://localhost:3001/registration", {method: "POST",  
+  //   headers: {
+  //     "Content-Type": "application/json",
+  //   },
+  //   body: JSON.stringify(userData)
+  // }).then((response) => {
+  //   if (response.status === 409) {
+  //     alert("Email isn't unuque")
+  //   } else if (response.status !== 200) {
+  //     alert("Registration failed")
+  //   } else {
+  //     return response.json()
+  //   }
+  // }).then((data) => setResponse(data))
+
+  // setUser(response)
+  // setPage("main")
+  // alert("Registration was successful")
+
   function handleLike(id) {
     let likedId = id
     let newList = liked.slice()
     newList.push(likedId)
+    
+
+    let body = {
+      email: "mail@mail.ru", // dont forget to clean
+      // dont forget to clean
+      // dont forget to clean
+      // dont forget to clean
+      // dont forget to clean
+      list: newList
+    }
+
+    fetch("http://localhost:3001/addlike", {method: "POST",  
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+      body: JSON.stringify(body)
+    }).then((response) => {
+      // Continue here
+      if (response.status === 401) {
+        alert("Unauthorized, please, sign in")
+      } else if (response.status !== 200) {
+        alert("Failed")
+      } else {
+        return response.json()
+      }
+    }).then((data) => setResponse(data))
+
     setLiked(newList)
+    alert("successful")
+  }
+
+  function handleDislike(id) {
+    document.getElementById(`${id}-like`).classList.remove("liked")
+    let indexInLiked = liked.indexOf(id)
+    let likedCopy = liked.slice()
+    likedCopy.splice(indexInLiked, 1)
+    setLiked(likedCopy) 
   }
 
   return (
@@ -319,7 +387,7 @@ function MainProductsBlock({liked, setLiked, products, setProducts}) {
         <div className='products'>
           <h2>Our Products</h2>
           <div className='products-block'>
-            {products.map((product) => <MainProductCard key={product.id} itemsList={product} liked={liked} setLiked={setLiked} handleLike={handleLike} />)}
+            {products.map((product) => <MainProductCard key={product.id} itemsList={product} liked={liked} setLiked={setLiked} handleLike={handleLike} handleDislike={handleDislike} />)}
           </div>
         </div>
       </div>
@@ -327,21 +395,29 @@ function MainProductsBlock({liked, setLiked, products, setProducts}) {
   )
 }
 
-function MainProductCard({itemsList, setLiked, liked, handleLike}) {
+function MainProductCard({itemsList, setLiked, liked, handleLike, handleDislike}) {
 
   function handleHover(id) {
-    let element = document.getElementById(id)
-    element.className = "card-hover"
+    document.getElementById(`${id}`).classList.add("card-hover")
   }
 
   function handleLeave(id) {
-    let element = document.getElementById(id)
-    element.className = "card-hover-invisible"
+    document.getElementById(`${id}`).classList.remove("card-hover")
   }
 
   let likeClass = 'card-hover-icon like'
   if (liked.indexOf(itemsList.id) !== -1) {
     likeClass = "card-hover-icon like liked"
+  }
+
+  let likeId = itemsList.id + "-like"
+
+  function handleClick(id) {
+    if (document.getElementById(`${id}-like`).className.baseVal === "card-hover-icon like liked") {
+      handleDislike(id)
+    } else {
+      handleLike(id)
+    }
   }
 
   return (
@@ -377,8 +453,8 @@ function MainProductCard({itemsList, setLiked, liked, handleLike}) {
                 <p className='white-text'><b>Share</b></p>
               </div>
 
-              <div className="card-hover-item like-item" onClick={() => {handleLike(itemsList.id)}}>
-                <svg id={itemsList.id} className={likeClass} width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <div className="card-hover-item like-item" onClick={() => {handleClick(itemsList.id)}}>
+                <svg id={likeId} className={likeClass} width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M11.9996 21.0542C-8 10 5.99999 -1.99997 11.9996 5.58809C18 -1.99997 32 10 11.9996 21.0542Z" stroke="#ffffff" stroke-width="1.8"/>
                 </svg>
                 <p className='white-text'><b>Like</b></p>
@@ -565,16 +641,16 @@ function MainTips() {
 }
 
 
-function RegistrationPage({page, setPage, user, setUser}) {
+function RegistrationPage({page, setPage}) {
   return (
     <>
       <LittleHeader setPage={setPage} />
-      <RegistrationForm user={user} setUser={setUser} setPage={setPage} />
+      <RegistrationForm setPage={setPage} />
     </>
   )
 }
 
-function RegistrationForm({user, setUser, setPage}) {
+function RegistrationForm({setPage}) {
   const [response, setResponse] = useState({})
 
   function registr(e) {
@@ -598,19 +674,20 @@ function RegistrationForm({user, setUser, setPage}) {
         fetch("http://localhost:3001/registration", {method: "POST",  
           headers: {
             "Content-Type": "application/json",
+            // "Authorization": `Bearer ${localStorage.getItem()}`
           },
           body: JSON.stringify(userData)
         }).then((response) => {
           if (response.status === 409) {
             alert("Email isn't unuque")
-          } else if (response.status !== 200) {
-            alert("Registration failed")
           } else {
             return response.json()
           }
-        }).then((data) => setResponse(data))
-
-        setUser(response)
+        }).then((data) => localStorage.setItem("token", data.token))
+        
+        // console.log(response)
+        // // setResponse(data)
+        // setUser(response)
         setPage("main")
         alert("Registration was successful")
     } else {
@@ -672,16 +749,16 @@ function RegistrationForm({user, setUser, setPage}) {
 }
 
 
-function AuthorizationPage({page, setPage, user, setUser}) {
+function AuthorizationPage({page, setPage}) {
   return (
     <>
       <LittleHeader setPage={setPage} />
-      <AuthorizationForm user={user} setUser={setUser} setPage={setPage} />
+      <AuthorizationForm setPage={setPage} />
     </>
   )
 }
 
-function AuthorizationForm({user, setUser, setPage}) {
+function AuthorizationForm({setPage}) {
   const [response, setResponse] = useState({})
 
   function login(e) {
@@ -705,14 +782,10 @@ function AuthorizationForm({user, setUser, setPage}) {
         alert("We haven't got user with this email")
       } else if (response.status === 403) {
         alert("Wrong password")
-      } else if (response.status !== 200) {
-        alert("Sorry, autentification is failed")
       } else {
         return response.json()
       }
-    }).then((data) => setResponse(data));
-    
-    setUser(response)
+    }).then((data) => localStorage.setItem("token", data.token));
     setPage("main")
     alert("Autentifiacation was successful")
   }
@@ -752,10 +825,10 @@ function AuthorizationForm({user, setUser, setPage}) {
 }
 
 
-function WaitListPage({page, setPage, user, setUser, liked, setLiked, products}) {
+function WaitListPage({page, setPage, liked, setLiked, products, token}) {
   return (
     <>
-      <Header setPage={setPage} page={page} user={user} />
+      <Header setPage={setPage} page={page} token={token} />
       <WaitListProducts liked={liked} setLiked={setLiked} products={products} />
       <Footer />
     </>
@@ -769,22 +842,26 @@ function WaitListProducts({liked, setLiked, products}) {
 
   let likedProducts = []
   for (let i = 0; i < liked.length; i++) {
-    let liked_id = liked[i]
-    let index = products.map(function(e) { return e.id; }).indexOf(liked_id);
-    likedProducts.push(index)
+    let liked_id = liked[i] 
+    let index = products.map(function(e) { return e.id; }).indexOf(liked_id); //index of liked element in products array
+    likedProducts.push(index) // array of indexes
   }
 
   for (let i = 0; i < likedProducts.length; i++) {
-    productCards.push(products[likedProducts[i]])
+    productCards.push(products[likedProducts[i]]) // array with all information about liked products
   }
 
   function handleDislike(id) {
-    // document.getElementById(`${id}-like`).className = "card-hover-icon like"
-    // Continue here
-  }
+    console.log(document.getElementById(`${id}-like`).className.baseVal)
 
-  // {products.map((product) => <MainProductCard key={product.id} itemsList={product} liked={liked} setLiked={setLiked} handleLike={handleLike} />)}
-  // let index = itemsList.map(function(e) { return e.id; }).indexOf(id);
+    if (document.getElementById(`${id}-like`).className.baseVal === "card-hover-icon like liked") {
+      document.getElementById(`${id}-like`).classList.remove("liked")
+      let indexInLiked = liked.indexOf(id)
+      let likedCopy = liked.slice()
+      likedCopy.splice(indexInLiked, 1)
+      setLiked(likedCopy) 
+    }
+  }
 
   return (
     <>
@@ -794,6 +871,7 @@ function WaitListProducts({liked, setLiked, products}) {
           <div className='products-block'>
             {productCards.map((product) => <WaitProductCard key={product.id} handleDislike={handleDislike} itemsList={product} liked={liked} setLiked={setLiked} />)}
           </div>
+          {likedProducts.length === 0 && <h2>Your wait list is empty</h2>}
         </div>
       </div>
     </>
@@ -866,10 +944,10 @@ function WaitProductCard({itemsList, liked, setLiked, handleDislike}) {
 }
 
 
-function BasketPage({page, setPage, user, setUser, liked, setLiked}) {
+function BasketPage({page, setPage, liked, setLiked, token}) {
   return (
     <>
-      <Header setPage={setPage} page={page} user={user} />
+      <Header setPage={setPage} page={page} token={token} />
       <Footer />
     </>
   )

@@ -341,7 +341,7 @@ footer {
   width: 100%;
   color: var(--white);
   background-color: var(--orange);
-  border: 1px solid var(--white);
+  border: 1px solid var(--orange);
 }
 
 .invert:hover {
@@ -573,7 +573,7 @@ footer {
 }
 
 .card-hover {
-  display: block;
+  display: block !important;
   background-color: #0000008c;
   position: absolute;
   top: 0;
