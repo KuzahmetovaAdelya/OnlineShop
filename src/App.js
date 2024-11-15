@@ -14,7 +14,7 @@ export default function App() {
       {page === "main" && <MainPage page={page} setPage={setPage} liked={liked} setLiked={setLiked} products={products} setProducts={setProducts} token={token} />}
       {page === "registration" && <RegistrationPage page={page} setPage={setPage} />}
       {page === "authorization" && <AuthorizationPage page={page} setPage={setPage} />}
-      {page === "waitlist" && <WaitListPage page={page} setPage={setPage} liked={liked} setLiked={setLiked} products={products} token={token} />}
+      {page === "waitlist" && <WaitListPage page={page} setPage={setPage} liked={liked} setLiked={setLiked} products={products} token={token} setProducts={setProducts} />}
       {page === "basket" && <BasketPage page={page} setPage={setPage}  liked={liked} setLiked={setLiked} token={token} />}
     </>
   )
@@ -143,7 +143,7 @@ function MainPage({setPage, page, liked, setLiked, products, setProducts, token}
       <Header setPage={setPage} page={page} token={token} />
       <MainHeaderSliderBlock />
       <MainFeatures />
-      <MainProductsBlock liked={liked} setLiked={setLiked} products={products} setProducts={setProducts} token={token} />
+      <MainProductsBlock liked={liked} setLiked={setLiked} products={products} setProducts={setProducts} token={token} setPage={setPage} />
       <MainTips />
       <Footer />
     </>
@@ -301,7 +301,7 @@ function MainFeatureItem({title, subtitle, img}) {
   )
 }
 
-function MainProductsBlock({liked, setLiked, products, setProducts, token}) {
+function MainProductsBlock({liked, setLiked, products, setProducts, token, setPage}) {
   const [response, setResponse] = useState({})
 
   useEffect(() => {
@@ -310,33 +310,6 @@ function MainProductsBlock({liked, setLiked, products, setProducts, token}) {
     .then((data) => setProducts(data));
   }, [])
 
-  // let userData = {
-  //   email: email,
-  //   name: name,
-  //   surname: surname,
-  //   city: city,
-  //   password: password
-  // }
-
-  // fetch("http://localhost:3001/registration", {method: "POST",  
-  //   headers: {
-  //     "Content-Type": "application/json",
-  //   },
-  //   body: JSON.stringify(userData)
-  // }).then((response) => {
-  //   if (response.status === 409) {
-  //     alert("Email isn't unuque")
-  //   } else if (response.status !== 200) {
-  //     alert("Registration failed")
-  //   } else {
-  //     return response.json()
-  //   }
-  // }).then((data) => setResponse(data))
-
-  // setUser(response)
-  // setPage("main")
-  // alert("Registration was successful")
-
   function handleLike(id) {
     let likedId = id
     let newList = liked.slice()
@@ -344,11 +317,6 @@ function MainProductsBlock({liked, setLiked, products, setProducts, token}) {
     
 
     let body = {
-      email: "mail@mail.ru", // dont forget to clean
-      // dont forget to clean
-      // dont forget to clean
-      // dont forget to clean
-      // dont forget to clean
       list: newList
     }
 
@@ -370,7 +338,6 @@ function MainProductsBlock({liked, setLiked, products, setProducts, token}) {
     }).then((data) => setResponse(data))
 
     setLiked(newList)
-    alert("successful")
   }
 
   function handleDislike(id) {
@@ -378,7 +345,30 @@ function MainProductsBlock({liked, setLiked, products, setProducts, token}) {
     let indexInLiked = liked.indexOf(id)
     let likedCopy = liked.slice()
     likedCopy.splice(indexInLiked, 1)
+
+    let body = {
+      list: likedCopy
+    }
+
+    fetch("http://localhost:3001/addlike", {method: "POST",  
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+      body: JSON.stringify(body)
+    }).then((response) => {
+      // Continue here
+      if (response.status === 401) {
+        alert("Unauthorized, please, sign in")
+      } else if (response.status !== 200) {
+        alert("Failed")
+      } else {
+        return response.json()
+      }
+    }).then((data) => setResponse(data))
+
     setLiked(likedCopy) 
+    
   }
 
   return (
@@ -387,7 +377,7 @@ function MainProductsBlock({liked, setLiked, products, setProducts, token}) {
         <div className='products'>
           <h2>Our Products</h2>
           <div className='products-block'>
-            {products.map((product) => <MainProductCard key={product.id} itemsList={product} liked={liked} setLiked={setLiked} handleLike={handleLike} handleDislike={handleDislike} />)}
+            {products.map((product) => <MainProductCard key={product.id} itemsList={product} liked={liked} setPage={setPage} handleLike={handleLike} handleDislike={handleDislike} token={token} />)}
           </div>
         </div>
       </div>
@@ -395,7 +385,7 @@ function MainProductsBlock({liked, setLiked, products, setProducts, token}) {
   )
 }
 
-function MainProductCard({itemsList, setLiked, liked, handleLike, handleDislike}) {
+function MainProductCard({itemsList, setLiked, liked, handleLike, handleDislike, token, setPage}) {
 
   function handleHover(id) {
     document.getElementById(`${id}`).classList.add("card-hover")
@@ -446,20 +436,25 @@ function MainProductCard({itemsList, setLiked, liked, handleLike, handleDislike}
         
         <div className='card-hover-invisible' id={itemsList.id}>
           <div className='card-hover-block'>
-            <button className='card-hover-button'>Add to cart</button>
-            <div className='card-hover-line'>
-              <div className='card-hover-item'>
-                <img src='share.svg' alt='share' className='card-hover-icon'></img>
-                <p className='white-text'><b>Share</b></p>
-              </div>
+            {token === null ?
+              <button className='card-hover-button' onClick={() => {setPage("registration")}}>Add to cart</button> :
+              <button className='card-hover-button'>Add to cart</button>
+            }
+            {token !== null &&
+              <div className='card-hover-line'>
+                <div className='card-hover-item'>
+                  <img src='share.svg' alt='share' className='card-hover-icon'></img>
+                  <p className='white-text'><b>Share</b></p>
+                </div>
 
-              <div className="card-hover-item like-item" onClick={() => {handleClick(itemsList.id)}}>
-                <svg id={likeId} className={likeClass} width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M11.9996 21.0542C-8 10 5.99999 -1.99997 11.9996 5.58809C18 -1.99997 32 10 11.9996 21.0542Z" stroke="#ffffff" stroke-width="1.8"/>
-                </svg>
-                <p className='white-text'><b>Like</b></p>
+                <div className="card-hover-item like-item" onClick={() => {handleClick(itemsList.id)}}>
+                  <svg id={likeId} className={likeClass} width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M11.9996 21.0542C-8 10 5.99999 -1.99997 11.9996 5.58809C18 -1.99997 32 10 11.9996 21.0542Z" stroke="#ffffff" stroke-width="1.8"/>
+                  </svg>
+                  <p className='white-text'><b>Like</b></p>
+                </div>
               </div>
-            </div>
+            }
           </div>
         </div>
       </div>
@@ -674,7 +669,6 @@ function RegistrationForm({setPage}) {
         fetch("http://localhost:3001/registration", {method: "POST",  
           headers: {
             "Content-Type": "application/json",
-            // "Authorization": `Bearer ${localStorage.getItem()}`
           },
           body: JSON.stringify(userData)
         }).then((response) => {
@@ -685,9 +679,6 @@ function RegistrationForm({setPage}) {
           }
         }).then((data) => localStorage.setItem("token", data.token))
         
-        // console.log(response)
-        // // setResponse(data)
-        // setUser(response)
         setPage("main")
         alert("Registration was successful")
     } else {
@@ -825,31 +816,58 @@ function AuthorizationForm({setPage}) {
 }
 
 
-function WaitListPage({page, setPage, liked, setLiked, products, token}) {
+function WaitListPage({page, setPage, liked, setLiked, products, token, setProducts}) {
   return (
     <>
       <Header setPage={setPage} page={page} token={token} />
-      <WaitListProducts liked={liked} setLiked={setLiked} products={products} />
+      <WaitListProducts liked={liked} setLiked={setLiked} products={products} token={token} setProducts={setProducts} />
       <Footer />
     </>
   )
 }
 
-function WaitListProducts({liked, setLiked, products}) {
-
-
-  let productCards = []
-
+function WaitListProducts({liked, setLiked, products, token, setProducts}) {
+  const [productCards, setProductCards] = useState([])
   let likedProducts = []
-  for (let i = 0; i < liked.length; i++) {
-    let liked_id = liked[i] 
-    let index = products.map(function(e) { return e.id; }).indexOf(liked_id); //index of liked element in products array
-    likedProducts.push(index) // array of indexes
-  }
+  console.log(liked)
 
-  for (let i = 0; i < likedProducts.length; i++) {
-    productCards.push(products[likedProducts[i]]) // array with all information about liked products
-  }
+  useEffect(() => {
+    let likedList = ""
+    fetch("http://localhost:3001/getliked", {method: "GET",
+      headers: {
+        "Authorization": `Bearer ${token}`
+      }
+    })
+    .then((response) => response.json())
+    .then((data) => {console.log(data.liked.split(" "))});
+
+    fetch("http://localhost:3001/getproducts")
+    .then((response) => response.json())
+    .then((data) => setProducts(data));
+
+
+
+    // console.log(liked)
+
+    // for (let i = 0; i < liked.length; i++) {
+    //   let liked_id = liked[i]
+    //   let index = products.map(function(e) { return e.id; }).indexOf(liked_id); //index of liked element in products array
+    //   likedProducts.push(index) // array of indexes
+    // }
+  
+    // console.log(likedProducts)
+  
+    // let newProductCards
+    // for (let i = 0; i < likedProducts.length; i++) {
+    //   newProductCards = productCards.slice()
+    //   newProductCards.push(products[likedProducts[i]]) // array with all information about liked products
+    // }
+    // setProductCards(newProductCards)
+  }, [])
+  console.log(productCards)
+
+
+
 
   function handleDislike(id) {
     console.log(document.getElementById(`${id}-like`).className.baseVal)
@@ -869,7 +887,7 @@ function WaitListProducts({liked, setLiked, products}) {
         <div className='products'>
           <h2>Wait List</h2>
           <div className='products-block'>
-            {productCards.map((product) => <WaitProductCard key={product.id} handleDislike={handleDislike} itemsList={product} liked={liked} setLiked={setLiked} />)}
+            {/* {productCards.map((product) => <WaitProductCard key={product.id} handleDislike={handleDislike} itemsList={product} liked={liked} setLiked={setLiked} />)} */}
           </div>
           {likedProducts.length === 0 && <h2>Your wait list is empty</h2>}
         </div>
@@ -880,13 +898,11 @@ function WaitListProducts({liked, setLiked, products}) {
 
 function WaitProductCard({itemsList, liked, setLiked, handleDislike}) {
   function handleHover(id) {
-    let element = document.getElementById(id)
-    element.className = "card-hover"
+    document.getElementById(`${id}`).classList.add("card-hover")
   }
 
   function handleLeave(id) {
-    let element = document.getElementById(id)
-    element.className = "card-hover-invisible"
+    document.getElementById(`${id}`).classList.remove("card-hover")
   }
 
   let likeClass = 'card-hover-icon like'
@@ -898,7 +914,8 @@ function WaitProductCard({itemsList, liked, setLiked, handleDislike}) {
 
   return (
     <>
-      <div className='product-card' onMouseEnter={() => {handleHover(itemsList.id)}} onMouseLeave={() => {handleLeave(itemsList.id)}}>
+      {/* <div className='product-card' onMouseEnter={() => {handleHover(itemsList.id)}} onMouseLeave={() => {handleLeave(itemsList.id)}}> */}
+      <div className='product-card'>
         <img src={itemsList.img} className='product-card-img' alt='Syltherine'></img>
         <div className='product-card-text-block'>
           <h5>{itemsList.name}</h5>
