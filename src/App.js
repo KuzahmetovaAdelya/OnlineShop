@@ -6,16 +6,17 @@ import footerList from './footerList.js';
 export default function App() {
   const [page, setPage] = useState("main")
   const token = localStorage.getItem("token")
-  const [liked, setLiked] = useState([])
   const [products, setProducts] = useState([])
+  const [likedProducts, setLikedProducts] = useState([])
+
 
   return (
     <>
-      {page === "main" && <MainPage page={page} setPage={setPage} liked={liked} setLiked={setLiked} products={products} setProducts={setProducts} token={token} />}
+      {page === "main" && <MainPage page={page} setPage={setPage} products={products} setProducts={setProducts} token={token} likedProducts={likedProducts} setLikedProducts={setLikedProducts} />}
       {page === "registration" && <RegistrationPage page={page} setPage={setPage} />}
       {page === "authorization" && <AuthorizationPage page={page} setPage={setPage} />}
-      {page === "waitlist" && <WaitListPage page={page} setPage={setPage} liked={liked} setLiked={setLiked} products={products} token={token} setProducts={setProducts} />}
-      {page === "basket" && <BasketPage page={page} setPage={setPage}  liked={liked} setLiked={setLiked} token={token} />}
+      {page === "waitlist" && <WaitListPage page={page} setPage={setPage} token={token} likedProducts={likedProducts} setLikedProducts={setLikedProducts} />}
+      {page === "basket" && <BasketPage page={page} setPage={setPage} likedProducts={likedProducts} setLikedProducts={setLikedProducts} token={token} />}
     </>
   )
 }
@@ -121,7 +122,7 @@ function Footer({setPage, page}) {
 function FooterList({list}) {
   let listItem = []
   for (let i = 0; i < list.elements.length; i++) { 
-    listItem.push(<p className='gray-text'>{list.elements[i]}</p>)
+    listItem.push(<p className='gray-text' key={i}>{list.elements[i]}</p>)
   }
 
   return (
@@ -137,13 +138,13 @@ function FooterList({list}) {
 }
 
 
-function MainPage({setPage, page, liked, setLiked, products, setProducts, token}) {
+function MainPage({setPage, page, products, setProducts, token, likedProducts, setLikedProducts}) {
   return (
     <>
       <Header setPage={setPage} page={page} token={token} />
       <MainHeaderSliderBlock />
       <MainFeatures />
-      <MainProductsBlock liked={liked} setLiked={setLiked} products={products} setProducts={setProducts} token={token} setPage={setPage} />
+      <MainProductsBlock products={products} setProducts={setProducts} token={token} setPage={setPage} likedProducts={likedProducts} setLikedProducts={setLikedProducts} />
       <MainTips />
       <Footer />
     </>
@@ -301,23 +302,47 @@ function MainFeatureItem({title, subtitle, img}) {
   )
 }
 
-function MainProductsBlock({liked, setLiked, products, setProducts, token, setPage}) {
+function MainProductsBlock({products, setProducts, token, setPage, likedProducts, setLikedProducts}) {
   const [response, setResponse] = useState({})
+  const [likedIds, setLikedIds] = useState([])
+
+
 
   useEffect(() => {
     fetch("http://localhost:3001/getproducts")
     .then((response) => response.json())
     .then((data) => setProducts(data));
+
+    if(token !== null) {
+      fetch("http://localhost:3001/getliked", {method: "GET",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      })
+      .then((response) => response.json())
+      .then((data) => {
+        const likedIdsArray = data.map((product) => product.productId);
+  
+        fetch("http://localhost:3001/getproductbyid", {method: "POST",       
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({likedIds: likedIdsArray})
+        })
+        .then((response) => response.json())
+        .then((data) => setLikedProducts(data));
+      });
+    }
+
   }, [])
 
+  
+
   function handleLike(id) {
-    let likedId = id
-    let newList = liked.slice()
-    newList.push(likedId)
-    
+    document.getElementById(`${id}-like`).classList.add("liked")
 
     let body = {
-      list: newList
+      productId: id
     }
 
     fetch("http://localhost:3001/addlike", {method: "POST",  
@@ -327,48 +352,26 @@ function MainProductsBlock({liked, setLiked, products, setProducts, token, setPa
       },
       body: JSON.stringify(body)
     }).then((response) => {
-      // Continue here
-      if (response.status === 401) {
-        alert("Unauthorized, please, sign in")
-      } else if (response.status !== 200) {
-        alert("Failed")
-      } else {
-        return response.json()
-      }
+      return response.json()
     }).then((data) => setResponse(data))
-
-    setLiked(newList)
   }
 
   function handleDislike(id) {
     document.getElementById(`${id}-like`).classList.remove("liked")
-    let indexInLiked = liked.indexOf(id)
-    let likedCopy = liked.slice()
-    likedCopy.splice(indexInLiked, 1)
 
     let body = {
-      list: likedCopy
+      productId: id
     }
 
-    fetch("http://localhost:3001/addlike", {method: "POST",  
+    fetch("http://localhost:3001/deletelike", {method: "DELETE",  
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${token}`,
       },
       body: JSON.stringify(body)
     }).then((response) => {
-      // Continue here
-      if (response.status === 401) {
-        alert("Unauthorized, please, sign in")
-      } else if (response.status !== 200) {
-        alert("Failed")
-      } else {
-        return response.json()
-      }
+      return response.json()
     }).then((data) => setResponse(data))
-
-    setLiked(likedCopy) 
-    
   }
 
   return (
@@ -377,7 +380,7 @@ function MainProductsBlock({liked, setLiked, products, setProducts, token, setPa
         <div className='products'>
           <h2>Our Products</h2>
           <div className='products-block'>
-            {products.map((product) => <MainProductCard key={product.id} itemsList={product} liked={liked} setPage={setPage} handleLike={handleLike} handleDislike={handleDislike} token={token} />)}
+            {products.map((product) => <MainProductCard key={product.id} itemsList={product} setPage={setPage} handleLike={handleLike} handleDislike={handleDislike} token={token} likedProducts={likedProducts} likedIds={likedIds} />)}
           </div>
         </div>
       </div>
@@ -385,7 +388,7 @@ function MainProductsBlock({liked, setLiked, products, setProducts, token, setPa
   )
 }
 
-function MainProductCard({itemsList, setLiked, liked, handleLike, handleDislike, token, setPage}) {
+function MainProductCard({itemsList, handleLike, handleDislike, token, setPage, likedProducts, likedIds}) {
 
   function handleHover(id) {
     document.getElementById(`${id}`).classList.add("card-hover")
@@ -396,7 +399,7 @@ function MainProductCard({itemsList, setLiked, liked, handleLike, handleDislike,
   }
 
   let likeClass = 'card-hover-icon like'
-  if (liked.indexOf(itemsList.id) !== -1) {
+  if (likedProducts.map(function(e) { return e.id; }).indexOf(itemsList.id) !== -1) {
     likeClass = "card-hover-icon like liked"
   }
 
@@ -816,68 +819,59 @@ function AuthorizationForm({setPage}) {
 }
 
 
-function WaitListPage({page, setPage, liked, setLiked, products, token, setProducts}) {
+function WaitListPage({page, setPage, token, likedProducts, setLikedProducts}) {
   return (
     <>
       <Header setPage={setPage} page={page} token={token} />
-      <WaitListProducts liked={liked} setLiked={setLiked} products={products} token={token} setProducts={setProducts} />
+      <WaitListProducts token={token} likedProducts={likedProducts} setLikedProducts={setLikedProducts} />
       <Footer />
     </>
   )
 }
 
-function WaitListProducts({liked, setLiked, products, token, setProducts}) {
+function WaitListProducts({token, likedProducts, setLikedProducts}) {
   const [productCards, setProductCards] = useState([])
-  let likedProducts = []
-  console.log(liked)
+  
 
   useEffect(() => {
-    let likedList = ""
     fetch("http://localhost:3001/getliked", {method: "GET",
       headers: {
         "Authorization": `Bearer ${token}`
       }
     })
     .then((response) => response.json())
-    .then((data) => {console.log(data.liked.split(" "))});
+    .then((data) => {
+      const likedIdsArray = data.map((product) => product.productId);
 
-    fetch("http://localhost:3001/getproducts")
-    .then((response) => response.json())
-    .then((data) => setProducts(data));
-
-
-
-    // console.log(liked)
-
-    // for (let i = 0; i < liked.length; i++) {
-    //   let liked_id = liked[i]
-    //   let index = products.map(function(e) { return e.id; }).indexOf(liked_id); //index of liked element in products array
-    //   likedProducts.push(index) // array of indexes
-    // }
-  
-    // console.log(likedProducts)
-  
-    // let newProductCards
-    // for (let i = 0; i < likedProducts.length; i++) {
-    //   newProductCards = productCards.slice()
-    //   newProductCards.push(products[likedProducts[i]]) // array with all information about liked products
-    // }
-    // setProductCards(newProductCards)
-  }, [])
-  console.log(productCards)
-
-
-
+      fetch("http://localhost:3001/getproductbyid", {method: "POST",       
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({likedIds: likedIdsArray})
+      })
+      .then((response) => response.json())
+      .then((data) => setLikedProducts(data));
+    });
+  }, [productCards])
 
   function handleDislike(id) {
-    console.log(document.getElementById(`${id}-like`).className.baseVal)
-
     if (document.getElementById(`${id}-like`).className.baseVal === "card-hover-icon like liked") {
       document.getElementById(`${id}-like`).classList.remove("liked")
-      let indexInLiked = liked.indexOf(id)
-      let likedCopy = liked.slice()
-      likedCopy.splice(indexInLiked, 1)
-      setLiked(likedCopy) 
+
+      let prodId = {
+        productId: id
+      }
+
+      fetch("http://localhost:3001/deletelike", {method: "DELETE",  
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(prodId)
+      })
+      .then((response) => {
+        return response.json()
+      }).then((data) => setProductCards(data));
     }
   }
 
@@ -885,18 +879,18 @@ function WaitListProducts({liked, setLiked, products, token, setProducts}) {
     <>
       <div className='container mb pt'>
         <div className='products'>
-          <h2>Wait List</h2>
+          <h2>Favourite List</h2>
           <div className='products-block'>
-            {/* {productCards.map((product) => <WaitProductCard key={product.id} handleDislike={handleDislike} itemsList={product} liked={liked} setLiked={setLiked} />)} */}
+            {likedProducts.map((product) => <WaitProductCard key={product.id} handleDislike={handleDislike} itemsList={product} likedProducts={likedProducts} setLikedProducts={setLikedProducts} />)}
           </div>
-          {likedProducts.length === 0 && <h2>Your wait list is empty</h2>}
+          {likedProducts.length === 0 && <h2>Your list of favourites is empty</h2>}
         </div>
       </div>
     </>
   )
 }
 
-function WaitProductCard({itemsList, liked, setLiked, handleDislike}) {
+function WaitProductCard({itemsList, likedProducts, setLikedProducts, handleDislike}) {
   function handleHover(id) {
     document.getElementById(`${id}`).classList.add("card-hover")
   }
@@ -906,7 +900,7 @@ function WaitProductCard({itemsList, liked, setLiked, handleDislike}) {
   }
 
   let likeClass = 'card-hover-icon like'
-  if (liked.indexOf(itemsList.id) !== -1) {
+  if (likedProducts.map(function(e) { return e.id; }).indexOf(itemsList.id) !== -1) {
     likeClass = "card-hover-icon like liked"
   }
 
@@ -914,8 +908,7 @@ function WaitProductCard({itemsList, liked, setLiked, handleDislike}) {
 
   return (
     <>
-      {/* <div className='product-card' onMouseEnter={() => {handleHover(itemsList.id)}} onMouseLeave={() => {handleLeave(itemsList.id)}}> */}
-      <div className='product-card'>
+      <div className='product-card' onMouseEnter={() => {handleHover(itemsList.id)}} onMouseLeave={() => {handleLeave(itemsList.id)}}>
         <img src={itemsList.img} className='product-card-img' alt='Syltherine'></img>
         <div className='product-card-text-block'>
           <h5>{itemsList.name}</h5>
@@ -961,12 +954,162 @@ function WaitProductCard({itemsList, liked, setLiked, handleDislike}) {
 }
 
 
-function BasketPage({page, setPage, liked, setLiked, token}) {
+function BasketPage({page, setPage, likedProducts, setLikedProducts, token}) {
   return (
     <>
       <Header setPage={setPage} page={page} token={token} />
+      <BasketProductPage likedProducts={likedProducts} setLikedProducts={setLikedProducts} token={token} setPage={setPage} />
       <Footer />
     </>
   )
 }
 
+function BasketProductPage({likedProducts, setLikedProducts, token, setPage}) {
+  const [productCards, setProductCards] = useState([])
+  const [basket, setBasket] = useState([])
+
+  let basketCountsArray = []
+
+  useEffect(() => {
+    fetch("http://localhost:3001/getbasket", {method: "GET",
+      headers: {
+        "Authorization": `Bearer ${token}`
+      }
+    })
+    .then((response) => response.json())
+    .then((data) => {
+      const basketIdsArray = data.map((product) => product.productId);
+      basketCountsArray = data.map((product) => product.count);
+
+      fetch("http://localhost:3001/getproductbyid", {method: "POST",       
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({likedIds: basketIdsArray})
+      })
+      .then((response) => response.json())
+      .then((data) => setBasket(data));
+    });
+  }, [productCards])
+
+  return (
+    <>
+      <div className='container mb pt'>
+        <div className='product'>
+          <h2>Basket</h2>
+          <div className='basket'>
+            <div className='basket-block'>
+              {/* {basket.map((product) => <BasketProductCard key={product.id} handleDislike={handleDislike} itemsList={product} likedProducts={likedProducts} setLikedProducts={setLikedProducts} />)} */}
+              {basket.map((product) => <BasketProductCard key={product.id} itemsList={product} likedProducts={likedProducts} setLikedProducts={setLikedProducts} token={token} setPage={setPage} handleDislike={"A"} handleLike={"a"} />)}
+            </div>
+            {/* {likedProducts.length === 0 && <h2>Your list of favourites is empty</h2>} */}
+            <div className='basket-price'>
+              <div className='basket-price-text-block'>
+                <h5>Price List</h5>
+                <div className='basket-price-block'>
+                  <div className='basket-price-item'>
+                    <p className='gray-text'>Syltherine <u>1</u></p>
+                    <p><u>Rp 2.500.000</u></p>
+                  </div>
+                </div> 
+
+                <div className='basket-price-item'>
+                  <h5>Total:</h5>
+                  <p><u>Rp 2.500.000</u></p>
+                </div>
+              </div>
+              <button className='basket-button'>Buy</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </>
+  )
+}
+
+
+function BasketProductCard({handleDislike, handleLike, itemsList, likedProducts, setLikedProducts, token, setPage}) {
+  function handleHover(id) {
+    document.getElementById(`${id}`).classList.add("card-hover")
+  }
+
+  function handleLeave(id) {
+    document.getElementById(`${id}`).classList.remove("card-hover")
+  }
+
+  let likeClass = 'card-hover-icon like'
+  if (likedProducts.map(function(e) { return e.id; }).indexOf(itemsList.id) !== -1) {
+    likeClass = "card-hover-icon like liked"
+  }
+
+  let likeId = itemsList.id + "-like"
+
+  // function handleClick(id) {
+  //   if (document.getElementById(`${id}-like`).className.baseVal === "card-hover-icon like liked") {
+  //     handleDislike(id)
+  //   } else {
+  //     handleLike(id)
+  //   }
+  // }
+
+  return (
+    <>
+      <div className='product-card' onMouseEnter={() => {handleHover(itemsList.id)}} onMouseLeave={() => {handleLeave(itemsList.id)}}>
+        <img src={itemsList.img} className='product-card-img' alt='Syltherine'></img>
+        <div className='product-card-text-block'>
+          <h5>{itemsList.name}</h5>
+          <p className='gray-text'>{itemsList.subtitle}</p>
+          <div className='product-card-text-line'>
+            <h6>Rp {itemsList.price}</h6>
+            <p className='light-text product-card-last-price'>{itemsList.oldPrice}</p>
+          </div>
+        </div>
+
+        {itemsList.type === "new" &&
+          <div className='product-card-new'>
+            <p className='white-text'>New</p>
+          </div>
+        }
+        {itemsList.type === "discount" &&
+          <div className='product-card-sale'>
+            <p className='white-text'>- {itemsList.percent}%</p>
+          </div>
+        }
+        
+        <div className='card-hover-invisible' id={itemsList.id}>
+          <div className='card-hover-block'>
+            <div className='card-hover-line'>
+              <button className='rounded-button'>-</button>
+              {/* Make correct counter */}
+              <p className='white-text'>1</p> 
+              {/*  */}
+              <button className='rounded-button'>+</button>
+            </div>
+
+            {token === null ?
+              <button className='card-hover-button' onClick={() => {setPage("registration")}}>Add to cart</button> :
+              <button className='card-hover-button'>Remove from cart</button>
+            }
+            {token !== null &&
+              <div className='card-hover-line'>
+                <div className='card-hover-item'>
+                  <img src='share.svg' alt='share' className='card-hover-icon'></img>
+                  <p className='white-text'><b>Share</b></p>
+                </div>
+
+                <div className="card-hover-item like-item">
+                {/* <div className="card-hover-item like-item" onClick={() => {handleClick(itemsList.id)}}> */}
+                  <svg id={likeId} className={likeClass} width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M11.9996 21.0542C-8 10 5.99999 -1.99997 11.9996 5.58809C18 -1.99997 32 10 11.9996 21.0542Z" stroke="#ffffff" stroke-width="1.8"/>
+                  </svg>
+                  <p className='white-text'><b>Like</b></p>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </>
+  )
+}

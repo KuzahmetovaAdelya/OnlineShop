@@ -85,40 +85,77 @@ app.get("/getproducts", (req, res) => {
     })
 })
 
-app.post("/addlike", authMiddleware, (req, res) => {
-    let userId = req.user.id
-    let result = {}
+app.post("/getproductbyid", (req, res) => {
+    let productIds = req.body.likedIds // array of ids
+    
+    const placeholders = productIds.map(() => '?').join(',');
+    const query = `SELECT * FROM products WHERE id IN (${placeholders})`;
 
-    let list = req.body.list.join(" ")
-
-    db.run("UPDATE Users SET liked = ? WHERE id = ?", [list, userId], (err, rows) => {
+    db.all(query, productIds, (err, rows) => {
         if (err) {
-            res.status(401).send(err);
+            res.status(500).send(err)
             return console.log(err.message)
         }
-        result = {
-            error: "none"
-        }
-
-        res.send(result)
-    })
+        res.send(rows);
+    });
 })
 
 app.get("/getliked", authMiddleware, (req, res) => {
     let userId = req.user.id
 
-    db.all("SELECT liked FROM Users WHERE id = ?", [userId], (err, rows) => {
+    db.all("SELECT productId FROM liked WHERE userId = ?", [userId], (err, rows) => {
         if (err) {
             res.status(500).send(err)
             return console.log(err.message)
         }
 
-
-        res.send(rows[0]) //send <{liked: <stroke>}>
+        res.send(rows) //send <{liked: <stroke>}>
     })
 })
 
+app.delete("/deletelike", authMiddleware, (req, res) => {
+    let userId = req.user.id
+    let productId = req.body.productId
 
+    db.run("DELETE FROM liked WHERE userId = ? AND productId = ?", [userId, productId], (err, row) => {
+        if (err) {
+            res.status(500).send(err)
+            return console.log(err.message)
+        }
+        let result = {
+            error: "none"
+        }
+        res.send(result)
+    })
+})
+
+app.post("/addlike", authMiddleware, (req, res) => {
+
+
+    let userId = req.user.id
+    let productId = req.body.productId
+    let result = {}
+
+    db.run("INSERT INTO liked(userId, productId) VALUES (?, ?)", [userId, productId], (err) => {
+        if (err) {
+            res.status(409).send(err);
+            return console.log(err.message)
+        }
+    })
+})
+
+app.get("/getbasket", authMiddleware, (req, res) => {
+    let userId = req.user.id
+
+    db.all("SELECT productId, count FROM basket WHERE userId = ?", [userId], (err, rows) => {
+        if (err) {
+            res.status(500).send(err)
+            return console.log(err.message)
+        }
+
+        res.send(rows) //send <{liked: <stroke>}>
+    })
+})
 
 app.listen(port, () => {
     console.log(`Example app listening on port http://localhost:${port}/`);
