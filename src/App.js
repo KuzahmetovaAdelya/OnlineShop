@@ -967,8 +967,9 @@ function BasketPage({page, setPage, likedProducts, setLikedProducts, token}) {
 function BasketProductPage({likedProducts, setLikedProducts, token, setPage}) {
   const [productCards, setProductCards] = useState([])
   const [basket, setBasket] = useState([])
+  // const [price, setPrice] = useState([])
 
-  let basketCountsArray = []
+  let basketCounts = []
 
   useEffect(() => {
     fetch("http://localhost:3001/getbasket", {method: "GET",
@@ -977,21 +978,46 @@ function BasketProductPage({likedProducts, setLikedProducts, token, setPage}) {
       }
     })
     .then((response) => response.json())
-    .then((data) => {
-      const basketIdsArray = data.map((product) => product.productId);
-      basketCountsArray = data.map((product) => product.count);
+    .then((data) => {setBasket(data);});
+  }, [])
 
-      fetch("http://localhost:3001/getproductbyid", {method: "POST",       
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({likedIds: basketIdsArray})
-      })
-      .then((response) => response.json())
-      .then((data) => setBasket(data));
-    });
-  }, [productCards])
+  let price = 0
 
+  for (let i = 0; i < basket.length; i++) {
+    let product = basket[i]
+    let itemPrice = product.count * product.price
+    price = price + itemPrice
+  }
+
+  function handleDelete(id) {
+    let prodId = {
+      productId: id
+    }
+
+    fetch("http://localhost:3001/deletefrombasket", {method: "DELETE",  
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify(prodId)
+    })
+    .then((response) => {
+      return response.json()
+    }).then((data) => setProductCards(data));
+  }
+
+
+
+  // let productPrice = priceList.slice()
+
+  // for (let i = 0; i < basket.length; i++) {
+  //   productPrice.push({
+  //     product: data[i],
+  //     count: basketCounts[i]
+  //   })
+  // }
+  // console.log(productPrice, basketCounts)
+  // setPriceList(productPrice)
   return (
     <>
       <div className='container mb pt'>
@@ -999,23 +1025,23 @@ function BasketProductPage({likedProducts, setLikedProducts, token, setPage}) {
           <h2>Basket</h2>
           <div className='basket'>
             <div className='basket-block'>
-              {/* {basket.map((product) => <BasketProductCard key={product.id} handleDislike={handleDislike} itemsList={product} likedProducts={likedProducts} setLikedProducts={setLikedProducts} />)} */}
-              {basket.map((product) => <BasketProductCard key={product.id} itemsList={product} likedProducts={likedProducts} setLikedProducts={setLikedProducts} token={token} setPage={setPage} handleDislike={"A"} handleLike={"a"} />)}
+              {basket.map((product) => <BasketProductCard key={product.id} handleDelete={handleDelete} setBasket={setBasket} itemsList={product} likedProducts={likedProducts} setLikedProducts={setLikedProducts} token={token} setPage={setPage} handleDislike={"A"} handleLike={"a"} />)}
             </div>
-            {/* {likedProducts.length === 0 && <h2>Your list of favourites is empty</h2>} */}
+            {basket.length === 0 && <h2>Your list of favourites is empty</h2>}
             <div className='basket-price'>
               <div className='basket-price-text-block'>
                 <h5>Price List</h5>
                 <div className='basket-price-block'>
-                  <div className='basket-price-item'>
+                  {/* <div className='basket-price-item'>
                     <p className='gray-text'>Syltherine <u>1</u></p>
                     <p><u>Rp 2.500.000</u></p>
-                  </div>
+                  </div> */}
+                  {basket.map((product) => <PriceListItem key={product.id} product={product} />)}
                 </div> 
 
                 <div className='basket-price-item'>
                   <h5>Total:</h5>
-                  <p><u>Rp 2.500.000</u></p>
+                  <p><u>Rp {price}</u></p>
                 </div>
               </div>
               <button className='basket-button'>Buy</button>
@@ -1028,8 +1054,21 @@ function BasketProductPage({likedProducts, setLikedProducts, token, setPage}) {
   )
 }
 
+function PriceListItem({product}) {
+  // setPrice((n) => n + (product.price * product.count))
+  return (
+    <>
+      <div className='basket-price-item'>
+        <p className='gray-text'>{product.name} <u>{product.count}</u></p>
+        <p><u>Rp {product.price * product.count}</u></p>
+      </div>
+    </>
+  )
+}
 
-function BasketProductCard({handleDislike, handleLike, itemsList, likedProducts, setLikedProducts, token, setPage}) {
+
+function BasketProductCard({handleDislike, handleLike, itemsList, likedProducts, setBasket, token, setPage, handleDelete}) {
+  const [counter, setCounter] = useState(itemsList.count)
   function handleHover(id) {
     document.getElementById(`${id}`).classList.add("card-hover")
   }
@@ -1042,7 +1081,7 @@ function BasketProductCard({handleDislike, handleLike, itemsList, likedProducts,
   if (likedProducts.map(function(e) { return e.id; }).indexOf(itemsList.id) !== -1) {
     likeClass = "card-hover-icon like liked"
   }
-
+  
   let likeId = itemsList.id + "-like"
 
   // function handleClick(id) {
@@ -1052,6 +1091,96 @@ function BasketProductCard({handleDislike, handleLike, itemsList, likedProducts,
   //     handleLike(id)
   //   }
   // }
+  let body = {
+    productId: itemsList.id
+  }
+
+  function handleCountChange(id, count) {
+    setBasket((prevBasket) => {
+      const newBasket = prevBasket.map((item) => {
+        if (item.id === id) {
+          const newCount = Math.max(1, item.count + count);
+          return { ...item, count: newCount };
+        }
+        return item;
+      });
+  
+      const updatedItem = newBasket.find(item => item.id === id);
+      if (updatedItem) {
+        fetch("http://localhost:3001/updatebasketcount", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            count: updatedItem.count,
+            productId: id
+          })
+        });
+      }
+  
+      return newBasket;
+    });
+  }
+
+  useEffect(() => {
+    fetch("http://localhost:3001/getbasketbyids", {method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      }, 
+      body: JSON.stringify(body)
+    })
+    .then((response) => response.json())
+    .then((data) => {setCounter(data.count)});
+  }, [counter])
+
+
+  function onPlus() {
+    let count = counter
+    count = count + 1
+    let body = {
+      count: count,
+      productId: itemsList.id
+    }
+
+    fetch("http://localhost:3001/updatebasketcount", {method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      }, 
+      body: JSON.stringify(body)
+    })
+    .then((response) => response.json())
+    .then((data) => console.log(data));
+    {setCounter(count)}
+  }
+
+  function onMinus() {
+    let count = counter
+    if (count === 1) {
+
+    } else {
+      count--
+      setCounter(count)
+      let body = {
+        count: count,
+        productId: itemsList.id
+      }
+  
+      fetch("http://localhost:3001/updatebasketcount", {method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        }, 
+        body: JSON.stringify(body)
+      })
+      .then((response) => response.json())
+      .then((data) => {console.log("minused")});
+    }
+
+  }
 
   return (
     <>
@@ -1079,13 +1208,18 @@ function BasketProductCard({handleDislike, handleLike, itemsList, likedProducts,
         
         <div className='card-hover-invisible' id={itemsList.id}>
           <div className='card-hover-block'>
-            <div className='card-hover-line'>
-              <button className='rounded-button'>-</button>
-              {/* Make correct counter */}
-              <p className='white-text'>1</p> 
-              {/*  */}
-              <button className='rounded-button'>+</button>
+            <div className='basket-mini-block'>
+              <div className='card-hover-line'>
+                <button className='rounded-button' onClick={() => {handleCountChange(itemsList.id, -1)}}>-</button>
+                <p className='white-text'>{itemsList.count}</p> 
+                <button className='rounded-button' onClick={() => {handleCountChange(itemsList.id, 1)}}>+</button>
+              </div>
+
+              <p className='white-text'><b>Rp {itemsList.count * itemsList.price}</b></p>
             </div>
+            
+
+            
 
             {token === null ?
               <button className='card-hover-button' onClick={() => {setPage("registration")}}>Add to cart</button> :

@@ -871,4 +871,16 @@ footer {
   max-height: 20px;
   border-radius: 100%;
   padding: 0;
+  text-align: center;
+}
+
+.basket-mini-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.basket-mini-block p {
+  
 }

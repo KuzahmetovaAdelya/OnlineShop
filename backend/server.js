@@ -147,13 +147,51 @@ app.post("/addlike", authMiddleware, (req, res) => {
 app.get("/getbasket", authMiddleware, (req, res) => {
     let userId = req.user.id
 
-    db.all("SELECT productId, count FROM basket WHERE userId = ?", [userId], (err, rows) => {
+    db.all("SELECT b.productId, b.count, p.* FROM basket b LEFT JOIN products p ON b.productId = p.id WHERE b.userId = ? GROUP BY b.productId, p.id;", [userId], (err, rows) => {
         if (err) {
             res.status(500).send(err)
             return console.log(err.message)
         }
-
         res.send(rows) //send <{liked: <stroke>}>
+    })
+})
+
+app.post('/getbasketbyids', authMiddleware, (req, res) => {
+    let userId = req.user.id
+
+    db.all("SELECT count FROM basket WHERE userId = ? AND productId = ?", [userId, req.body.productId], (err, row) => {
+        if (err) {
+            res.status(500).send(err)
+            return console.log(err.message)
+        }
+        res.send(row[0])
+    })
+})
+
+app.post("/updatebasketcount", authMiddleware, (req, res) => {
+    let userId = req.user.id
+
+    db.run("UPDATE basket SET count = ? WHERE userId = ? AND productId = ?", [req.body.count, userId, req.body.productId], (err, row) => {
+        if (err) {
+            res.status(500).send(err)
+            return console.log(err.message)
+        }
+    })
+})
+
+app.delete("/deletefrombasket", authMiddleware, (req, res) => {
+    let userId = req.user.id
+    let productId = req.body.productId
+
+    db.run("DELETE FROM liked WHERE userId = ? AND productId = ?", [userId, productId], (err, row) => {
+        if (err) {
+            res.status(500).send(err)
+            return console.log(err.message)
+        }
+        let result = {
+            error: "none"
+        }
+        res.send(result)
     })
 })
 
