@@ -183,7 +183,7 @@ app.delete("/deletefrombasket", authMiddleware, (req, res) => {
     let userId = req.user.id
     let productId = req.body.productId
 
-    db.run("DELETE FROM liked WHERE userId = ? AND productId = ?", [userId, productId], (err, row) => {
+    db.run("DELETE FROM basket WHERE userId = ? AND productId = ?", [userId, productId], (err, row) => {
         if (err) {
             res.status(500).send(err)
             return console.log(err.message)
@@ -192,6 +192,18 @@ app.delete("/deletefrombasket", authMiddleware, (req, res) => {
             error: "none"
         }
         res.send(result)
+    })
+})
+
+app.post("/addtobasket", authMiddleware, (req, res) => {
+    let userId = req.user.id
+    let productId = req.body.productId
+
+    db.run("INSERT INTO basket(userId, productId) VALUES (?, ?)", [userId, productId], (err) => {
+        if (err) {
+            res.status(409).send(err);
+            return console.log(err.message)
+        }
     })
 })
 
